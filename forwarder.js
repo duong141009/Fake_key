@@ -2,11 +2,13 @@ const Fastify = require("fastify");
 const WebSocket = require("ws");
 
 const app = Fastify({ logger: false });
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
+
 let sessions = [];
 
 const TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhbW91bnQiOjB9.p56b5g73I9wyoVu4db679bOvVeFJWVjGDg_ulBXyav8";
 
+// === KẾT NỐI WEBSOCKET SUNWIN ===
 function connectWebSocket() {
   const ws = new WebSocket(`wss://websocket.azhkthg1.net/websocket?token=${TOKEN}`, {
     headers: {
@@ -16,7 +18,7 @@ function connectWebSocket() {
   });
 
   ws.on("open", () => {
-    console.log("🟢 Kết nối WS Sunwin thành công");
+    console.log("🟢 Đã kết nối WebSocket Sunwin");
 
     const authPayload = [
       1, "MiniGame", "SC_xigtupou", "conga999",
@@ -31,14 +33,15 @@ function connectWebSocket() {
     ];
     ws.send(JSON.stringify(authPayload));
 
+    // Gửi yêu cầu dữ liệu mỗi 5s
     setInterval(() => {
-      const payload = [6, "MiniGame", "taixiuPlugin", { cmd: 1005 }];
-      ws.send(JSON.stringify(payload));
+      ws.send(JSON.stringify([6, "MiniGame", "taixiuPlugin", { cmd: 1005 }]));
     }, 5000);
   });
 
-  ws.on("message", async (data) => {
+  ws.on("message", (data) => {
     const raw = data.toString();
+    console.log("📩 RAW WS:", raw.slice(0, 200));
 
     try {
       const json = JSON.parse(raw);
@@ -68,12 +71,12 @@ function connectWebSocket() {
         }
       }
     } catch (err) {
-      console.error("❌ Lỗi xử lý WebSocket:", err.message);
+      console.error("❌ Lỗi WS:", err.message);
     }
   });
 
   ws.on("close", () => {
-    console.warn("🔌 WebSocket đóng. Thử lại sau 5s...");
+    console.warn("🔌 WS đóng. Kết nối lại sau 5s...");
     setTimeout(connectWebSocket, 5000);
   });
 
@@ -85,14 +88,14 @@ function connectWebSocket() {
 
 connectWebSocket();
 
-// === API ===
+// === ROUTE API CHUẨN ===
 
 app.get("/", async () => ({
-  message: "✅ Sunwin API hoạt động",
-  endpoints: ["/api/toolaxosun"]
+  message: "✅ Sunwin API đang hoạt động",
+  endpoints: ["/api/toolaxosun", "/api/last", "/api/history?limit=50"]
 }));
 
-// Trả kết quả kiểu giống API mẫu
+// Đơn giản giống mẫu bạn muốn
 app.get("/api/toolaxosun", async () => {
   const latest = sessions[0];
   if (!latest) return { message: "⛔ Chưa có dữ liệu" };
@@ -105,6 +108,27 @@ app.get("/api/toolaxosun", async () => {
   };
 });
 
+// Chi tiết phiên mới nhất
+app.get("/api/last", async () => {
+  const latest = sessions[0];
+  if (!latest) return { message: "⛔ Chưa có dữ liệu" };
+
+  return {
+    sid: latest.sid,
+    dices: [latest.d1, latest.d2, latest.d3],
+    total: latest.total,
+    result: latest.result,
+    timestamp: latest.timestamp
+  };
+});
+
+// Danh sách phiên gần nhất
+app.get("/api/history", async (req) => {
+  const limit = parseInt(req.query.limit || "50");
+  return sessions.slice(0, limit);
+});
+
+// === KHỞI CHẠY SERVER ===
 app.listen({ port: PORT, host: "0.0.0.0" }, () => {
-  console.log(`🚀 API đang chạy tại http://localhost:${PORT}`);
+  console.log(`🚀 API chạy tại http://localhost:${PORT}`);
 });
