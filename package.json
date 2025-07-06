@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "sunwin-api.js",
   "scripts": {
-    "start": "node sunwin-api.js"
+    "start": "node forwarder.js"
   },
   "dependencies": {
     "fastify": "^4.0.0",
