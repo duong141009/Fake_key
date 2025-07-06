@@ -1,12 +1,12 @@
 {
-  "name": "sunwin-forwarder",
+  "name": "sunwin-api",
   "version": "1.0.0",
-  "main": "forwarder.js",
+  "main": "sunwin-api.js",
   "scripts": {
-    "start": "node forwarder.js"
+    "start": "node sunwin-api.js"
   },
   "dependencies": {
-    "axios": "^1.6.7",
-    "ws": "^8.13.0"
+    "fastify": "^4.0.0",
+    "ws": "^8.0.0"
   }
 }
