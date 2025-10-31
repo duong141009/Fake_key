@@ -1,30 +1,25 @@
-// index.js
 const express = require('express');
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json());
 
-// Simple in-memory key store (thay bằng DB nếu cần)
-const validKeys = new Set(['MY_REAL_KEY_123','ANOTHER_KEY']);
-
-// endpoint expected by the app
+// Định nghĩa endpoint /apk/check_key.php
 app.post('/apk/check_key.php', (req, res) => {
-  const key = req.body?.key || null;
-  const device_id = req.body?.device_id || null;
+  const key = req.body?.key;
+  const device_id = req.body?.device_id;
 
-  if (!key) {
-    return res.json({ valid: false, message: 'Thiếu key' });
-  }
+  console.log('Nhận yêu cầu:', { key, device_id });
 
-  // logic kiểm tra key -- thay bằng DB/logic của bạn
-  if (validKeys.has(key) || key === 'ANY_FOR_TEST') {
-    return res.json({ valid: true, message: 'Đăng nhập thành công' });
+  if (key === 'MY_REAL_KEY_123') {
+    res.json({ valid: true, message: 'Đăng nhập thành công' });
   } else {
-    return res.json({ valid: false, message: 'Key không hợp lệ' });
+    res.json({ valid: false, message: 'Key không hợp lệ' });
   }
 });
 
-// health
-app.get('/', (req, res) => res.send('OK'));
+// Thêm GET để test nhanh bằng trình duyệt
+app.get('/apk/check_key.php', (req, res) => {
+  res.send('Server hoạt động — hãy dùng POST để kiểm tra key.');
+});
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Listening on ${port}`));
+app.listen(port, () => console.log(`✅ Server đang chạy tại cổng ${port}`));
