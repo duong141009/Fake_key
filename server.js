@@ -33,7 +33,7 @@ app.post('/apk/register.php', (req, res) => {
     ma_nap: "NAPTKTAPK" + Math.floor(Math.random() * 1000000),
     so_du: 1000, // Auto 1000 xu
     created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    goi_dung": "goivip1",
+    goi_dung: "goivip1",
     expires": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
   };
   
