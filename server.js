@@ -34,7 +34,7 @@ app.post('/apk/register.php', (req, res) => {
     so_du: 1000, // Auto 1000 xu
     created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
     goi_dung: "goivip1",
-    expires": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
   };
   
   users.push(newUser);
@@ -69,11 +69,12 @@ app.get('/apk/users.json', (req, res) => {
   res.json(users);
 });
 
-// Các API khác giữ nguyên...
+// API trừ tiền
 app.post('/apk/tru_tien.php', (req, res) => {
   res.json({success: true, message: "Mua thành công"});
 });
 
+// API cộng tiền
 app.post('/apk/cong_tien.php', (req, res) => {
   res.json({success: true});
 });
