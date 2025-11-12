@@ -4,58 +4,76 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// File users.json với user duong1
-app.get('/apk/users.json', (req, res) => {
-  const users = [
-    {
-      "email": "duong1",
-      "username": "duong1", 
-      "password": "duong",
-      "invite_key": "",
-      "device_id": req.query.device_id || "5759ca034300ac3d",
-      "ma_nap": "NAPTKTAPK123456",
-      "so_du": 1000,
-      "created_at": "2025-11-07 08:01:07",
-      "goi_dung": "goivip6",
-      "expires": "2125-11-07 08:01:07"
-    }
-  ];
-  res.json(users);
+let users = [
+  {
+    "email": "duong1",
+    "username": "duong1", 
+    "password": "duong",
+    "invite_key": "",
+    "device_id": "5759ca034300ac3d", 
+    "ma_nap": "NAPTKTAPK123456",
+    "so_du": 1000,
+    "created_at": "2025-11-07 08:01:07",
+    "goi_dung": "goivip6",
+    "expires": "2125-11-07 08:01:07"
+  }
+];
+
+// API đăng ký - tự động cấp 1000 xu
+app.post('/apk/register.php', (req, res) => {
+  const { username, email, password, invite_key, device_id } = req.body;
+  
+  // Tạo user mới với 1000 xu
+  const newUser = {
+    email: email,
+    username: username,
+    password: password,
+    invite_key: invite_key || "",
+    device_id: device_id,
+    ma_nap: "NAPTKTAPK" + Math.floor(Math.random() * 1000000),
+    so_du: 1000, // Auto 1000 xu
+    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    goi_dung": "goivip1",
+    expires": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
+  };
+  
+  users.push(newUser);
+  
+  res.json({
+    success: true,
+    message: "Đăng ký thành công! Bạn nhận ngay 1000 xu."
+  });
 });
 
-// API đăng nhập
+// API login - check user
 app.post('/apk/login.php', (req, res) => {
   const { username, password, device_id } = req.body;
   
-  if (username === "duong1" && password === "duong") {
+  const user = users.find(u => u.username === username && u.password === password);
+  
+  if (user) {
     res.json({
       success: true,
       message: "Đăng nhập thành công"
     });
   } else {
     res.json({
-      success: true, // Luôn thành công để test
-      message: "Đăng nhập thành công"
+      success: false,
+      message: "Sai thông tin đăng nhập"
     });
   }
 });
 
-// API đăng ký
-app.post('/apk/register.php', (req, res) => {
-  const { username, email, password, invite_key, device_id } = req.body;
-  
-  res.json({
-    success: true,
-    message: "Đăng ký thành công! Tài khoản đã được kích hoạt VIP."
-  });
+// API lấy user data
+app.get('/apk/users.json', (req, res) => {
+  res.json(users);
 });
 
-// API trừ tiền
+// Các API khác giữ nguyên...
 app.post('/apk/tru_tien.php', (req, res) => {
   res.json({success: true, message: "Mua thành công"});
 });
 
-// API cộng tiền
 app.post('/apk/cong_tien.php', (req, res) => {
   res.json({success: true});
 });
