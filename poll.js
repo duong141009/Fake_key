@@ -22,7 +22,9 @@ let CURRENT_HEADERS = {
     "X-Requested-With": "XMLHttpRequest",
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Cookie": "",
-    "X-CSRF-TOKEN": ""
+    "X-CSRF-TOKEN": "",
+    "Origin": "https://toolbcr88.com",
+    "Referer": "https://toolbcr88.com/ae/lobby"
 };
 
 let TABLE_DATA = {}; // In-memory storage: { "B01": { cau: "", results: "..." } }
@@ -70,7 +72,6 @@ async function autoLoginAndGetHeaders() {
 
     try {
         const page = await browser.newPage();
-        // Tăng timeout lên 60s
         page.setDefaultNavigationTimeout(60000);
         page.setDefaultTimeout(60000);
 
@@ -78,39 +79,25 @@ async function autoLoginAndGetHeaders() {
         await page.goto(LOGIN_CONFIG.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await sleep(5000);
 
-        console.log("🤖 Đang click nút mở Popup (.btn-login)...");
-        try {
-            await page.waitForSelector('.btn-login', { timeout: 10000 });
-            await page.click('.btn-login');
-            await sleep(2000);
-        } catch (e) {
-            console.log("⚠️ Không thấy nút .btn-login (Có thể đã mở sẵn popup hoặc web thay đổi)");
-        }
+        console.log("🤖 Đang thực hiện đăng nhập ngầm qua Javascript...");
+        await page.evaluate((u, p) => {
+            const userEl = document.querySelector('#txtUsername');
+            const passEl = document.querySelector('#txtPassword');
+            if (userEl) userEl.value = u;
+            if (passEl) passEl.value = p;
+            if (typeof do_login === 'function') {
+                do_login();
+            } else if (document.querySelector('.btn-confirm')) {
+                document.querySelector('.btn-confirm').click();
+            }
+        }, LOGIN_CONFIG.username, LOGIN_CONFIG.password);
 
-        const userSelector = '#txtUsername';
-        const passSelector = '#txtPassword';
+        console.log("⏳ Đang chờ hệ thống xử lý đăng nhập (5s)...");
+        await sleep(5000);
 
-        console.log("⏳ Đang đợi ô nhập liệu hiện ra...");
-        await page.waitForSelector(userSelector, { timeout: 20000 });
-
-        console.log("🤖 Đang nhập tài khoản...");
-        await page.focus(userSelector);
-        await page.keyboard.down('Control');
-        await page.keyboard.press('A');
-        await page.keyboard.up('Control');
-        await page.keyboard.press('Backspace');
-        await page.type(userSelector, LOGIN_CONFIG.username, { delay: 50 });
-
-        await page.focus(passSelector);
-        await page.keyboard.down('Control');
-        await page.keyboard.press('A');
-        await page.keyboard.up('Control');
-        await page.keyboard.press('Backspace');
-        await page.type(passSelector, LOGIN_CONFIG.password, { delay: 50 });
-
-        console.log("🤖 Đang bấm nút Đăng nhập...");
-        await page.keyboard.press('Enter');
-        await sleep(8000); // Chờ login xong
+        console.log("🤖 Đang chuyển hướng vào Lobby Sexy (AE)...");
+        await page.goto("https://toolbcr88.com/ae/lobby", { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await sleep(5000);
 
         console.log("🤖 Đang trích xuất Token...");
         const cookies = await page.cookies();
@@ -129,7 +116,6 @@ async function autoLoginAndGetHeaders() {
         }
 
         if (!csrfToken) {
-            // Thử lấy từ các nguồn khác nếu meta không có
             csrfToken = await page.evaluate(() => window.Laravel?.csrfToken || "");
         }
 
@@ -155,15 +141,33 @@ async function autoLoginAndGetHeaders() {
 async function fetchWithRetry(url, options, retries = 3) {
     try {
         options.headers = CURRENT_HEADERS;
-        const res = await fetch(url, { ...options, agent: httpsAgent });
+        // Thêm redirect: 'manual' để tránh fetch tự động theo link redirect tới trang login
+        const res = await fetch(url, { ...options, agent: httpsAgent, redirect: 'manual' });
 
-        if (res.status === 401 || res.status === 419) {
-            console.log("\n⚠️ Token hết hạn (419). Đang tự động Login lại...");
+        // Nhận diện mã lỗi liên quan đến xác thực hoặc redirect
+        if (res.status === 401 || res.status === 419 || res.status === 301 || res.status === 302) {
+            console.log(`\n⚠️ Token hết hạn hoặc bị chuyển hướng (${res.status}). Đang tự động Login lại...`);
+            await autoLoginAndGetHeaders();
+            return fetchWithRetry(url, options, retries);
+        }
+
+        // Bắt trường hợp bị chuyển hướng nhưng status vẫn 200
+        if (res.url && res.url.includes('/login')) {
+            console.log("\n⚠️ Bị chuyển hướng tới trang đăng nhập. Đang tự động Login lại...");
             await autoLoginAndGetHeaders();
             return fetchWithRetry(url, options, retries);
         }
 
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        
+        // Đảm bảo dữ liệu trả về không phải là HTML của trang báo lỗi/login
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+            console.log("\n⚠️ API trả về HTML thay vì JSON (có thể session bị lỗi). Đang tự động Login lại...");
+            await autoLoginAndGetHeaders();
+            return fetchWithRetry(url, options, retries);
+        }
+
         return await res.json();
 
     } catch (err) {
@@ -194,7 +198,7 @@ async function pollLoop() {
         try {
             const json = await fetchWithRetry(BCR_URL, {
                 method: "POST",
-                body: "gameCode="
+                body: "gameCode=ae"
             });
 
             if (json?.data) {
