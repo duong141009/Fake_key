@@ -7,12 +7,12 @@ const axios = require('axios');
 
 // ================= CẤU HÌNH (SỬA Ở ĐÂY) =================
 const LOGIN_CONFIG = {
-    url: "https://hackbcr88.com",
+    url: "https://toolbcr88.com/",
     username: "duong1410", // <--- ĐIỀN VÀO ĐÂY
     password: "duong1410"       // <--- ĐIỀN VÀO ĐÂY
 };
 
-const BCR_URL = "https://hackbcr88.com/baccarat/getnewresult";
+const BCR_URL ="https://toolbcr88.com/baccarat/getnewresult"
 const PORT = process.env.PORT || 5000;
 
 // ================= GLOBAL VARIABLES ===================
